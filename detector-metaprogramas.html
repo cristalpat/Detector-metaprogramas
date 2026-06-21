@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Metaprogramas">
+<title>Detector de Metaprogramas · Cris</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #1a2e1f;
+    color: #f0f4f0;
+    min-height: 100vh;
+    padding: 0 0 40px 0;
+  }
+
+  header {
+    background: linear-gradient(135deg, #1a2e1f, #2d5a3d);
+    padding: 18px 16px 14px;
+    border-bottom: 2px solid #4a7c59;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  header h1 {
+    font-size: 17px;
+    font-weight: 700;
+    color: #a8d5b5;
+    letter-spacing: 0.3px;
+  }
+
+  header p {
+    font-size: 11px;
+    color: #6a9e7a;
+    margin-top: 2px;
+  }
+
+  .input-area {
+    padding: 14px 14px 10px;
+    background: #1f3526;
+    border-bottom: 1px solid #2d4a35;
+  }
+
+  textarea {
+    width: 100%;
+    background: #0f1f14;
+    border: 1.5px solid #3a6b4a;
+    border-radius: 10px;
+    color: #e8f5ec;
+    font-size: 15px;
+    line-height: 1.5;
+    padding: 12px 14px;
+    resize: none;
+    min-height: 90px;
+    outline: none;
+    font-family: inherit;
+  }
+
+  textarea::placeholder { color: #4a7a5a; }
+  textarea:focus { border-color: #6ab87a; }
+
+  .btn-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .btn-detectar {
+    flex: 1;
+    background: #3a8a50;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 11px 16px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+  }
+
+  .btn-detectar:active { background: #2d7040; }
+
+  .btn-limpiar {
+    background: transparent;
+    color: #6ab87a;
+    border: 1.5px solid #3a6b4a;
+    border-radius: 8px;
+    padding: 11px 16px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .btn-limpiar:active { background: #1f3526; }
+
+  /* Resultados */
+  .resultados {
+    padding: 14px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #4a7a5a;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .empty-state .icon { font-size: 36px; margin-bottom: 10px; }
+
+  .conteo {
+    font-size: 12px;
+    color: #6a9e7a;
+    margin-bottom: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .card {
+    background: #1f3526;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    border: 1px solid #2d4a35;
+  }
+
+  .card-header {
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-titulo {
+    font-size: 14px;
+    font-weight: 700;
+    color: white;
+    flex: 1;
+  }
+
+  .card-categoria {
+    font-size: 10px;
+    color: rgba(255,255,255,0.6);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  .polo-badge {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .card-body {
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .seccion-label {
+    font-size: 10px;
+    color: #6a9e7a;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  .tag {
+    background: #0f1f14;
+    border: 1px solid #3a6b4a;
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 12px;
+    color: #8acf9a;
+    font-style: italic;
+  }
+
+  .pregunta {
+    font-size: 13px;
+    color: #c8e8d0;
+    font-style: italic;
+    line-height: 1.5;
+  }
+
+  .intervencion {
+    font-size: 13px;
+    color: #e0f0e4;
+    line-height: 1.5;
+    background: #0f1f14;
+    border-radius: 8px;
+    padding: 8px 10px;
+    border-left: 3px solid;
+  }
+
+  .sin-deteccion {
+    background: #1f3526;
+    border-radius: 10px;
+    padding: 16px;
+    border: 1px dashed #3a6b4a;
+    color: #6a9e7a;
+    font-size: 13px;
+    line-height: 1.6;
+    text-align: center;
+  }
+
+  footer {
+    text-align: center;
+    padding: 10px;
+    font-size: 10px;
+    color: #3a6b4a;
+    margin-top: 10px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🧠 Detector de Metaprogramas</h1>
+  <p>Cris · Uso en sesión</p>
+</header>
+
+<div class="input-area">
+  <textarea id="input" placeholder="Escribí lo que va diciendo el consultante…" oninput="detectarEnVivo(this.value)"></textarea>
+  <div class="btn-row">
+    <button class="btn-detectar" onclick="detectar()">Detectar</button>
+    <button class="btn-limpiar" onclick="limpiar()">Limpiar</button>
+  </div>
+</div>
+
+<div class="resultados" id="resultados">
+  <div class="empty-state">
+    <div class="icon">✍️</div>
+    Escribí lo que dice el consultante<br>y los metaprogramas aparecerán aquí.
+  </div>
+</div>
+
+<footer>12 metaprogramas · Cris</footer>
+
+<script>
+const METAPROGRAMAS = [
+  {
+    nombre: "Dirección",
+    categoria: "Motivación",
+    color: "#2d7a4a",
+    polos: {
+      "Acercarse": ["quiero lograr", "quiero llegar", "quiero alcanzar", "quiero conseguir", "mi meta", "mi objetivo", "me propongo", "busco", "voy a lograr", "quiero que pase", "apunto a", "aspiro"],
+      "Alejarse": ["no quiero", "no puedo", "evito", "me alejo", "me sale mal", "trato de no", "me cuesta", "no me sale", "no logro", "no consigo", "me resulta difícil", "me cuesta más"]
+    },
+    pregunta: "¿Qué querés lograr con esto?",
+    intervencion: {
+      "Acercarse": "Anclar en la meta: ¿Qué vas a sentir cuando lo logres?",
+      "Alejarse": "Reencuadrar al polo positivo: ¿Hacia dónde sí querés ir?"
+    }
+  },
+  {
+    nombre: "Tamaño",
+    categoria: "Procesamiento",
+    color: "#5a4a9a",
+    polos: {
+      "General": ["en general", "básicamente", "el panorama", "a grandes rasgos", "en líneas generales", "en resumen", "todo", "siempre", "nunca", "la vida", "las cosas"],
+      "Específico": ["exactamente", "paso a paso", "puntualmente", "específicamente", "en detalle", "ese día", "esa vez", "a las", "el lunes", "en ese momento"]
+    },
+    pregunta: "¿Me podés dar un ejemplo concreto / contarme el panorama general?",
+    intervencion: {
+      "General": "Chunking down: ¿Me das un ejemplo concreto?",
+      "Específico": "Chunking up: ¿Qué te da esto en términos más amplios?"
+    }
+  },
+  {
+    nombre: "Proceso",
+    categoria: "Decisión",
+    color: "#8a4a2a",
+    polos: {
+      "Procedimiento": ["hay que", "primero hay", "el paso", "tengo que seguir", "la forma correcta", "hay un orden", "se hace así", "el procedimiento", "hay que hacer"],
+      "Opciones": ["podría ser", "o también", "hay varias", "depende", "podemos ver", "podría elegir", "se me ocurre", "tengo opciones", "puedo hacer varias cosas", "una opción"]
+    },
+    pregunta: "¿Cómo decidís qué hacer?",
+    intervencion: {
+      "Procedimiento": "Flexibilizar: ¿Qué pasaría si hubiera otra forma de hacerlo?",
+      "Opciones": "Enfocar: ¿Cuál de todas las opciones se alinea más con tu meta?"
+    }
+  },
+  {
+    nombre: "Relación",
+    categoria: "Comparación",
+    color: "#7a2a6a",
+    polos: {
+      "Igualador": ["siempre", "igual", "todo es lo mismo", "nunca cambia", "es lo de siempre", "igual que antes", "como siempre", "lo mismo de siempre", "no cambia nada"],
+      "Diferenciador": ["es diferente", "cambió", "no es lo mismo", "esta vez es distinto", "ya no es igual", "algo cambió", "noto que ahora", "antes era distinto"]
+    },
+    pregunta: "¿Cómo comparás esto con otras situaciones parecidas?",
+    intervencion: {
+      "Igualador": "Buscar excepciones: ¿Hubo alguna vez que fue diferente?",
+      "Diferenciador": "Calibrar: ¿Qué cambió específicamente?"
+    }
+  },
+  {
+    nombre: "Marco de referencia",
+    categoria: "Validación",
+    color: "#2a6a7a",
+    polos: {
+      "Interno": ["yo sé", "para mí", "yo creo", "lo decido yo", "sé lo que quiero", "aunque me digan", "yo siento", "desde adentro", "lo siento así"],
+      "Externo": ["me dicen", "todos dicen", "les hago caso", "necesito que me digan", "depende de lo que opinen", "me aprueban", "me valido", "que me confirmen", "me juzgan", "juzgada", "qué dirán", "lo que piensan"]
+    },
+    pregunta: "¿Cómo sabés que lo estás haciendo bien?",
+    intervencion: {
+      "Interno": "Validar autonomía y explorar apertura al feedback.",
+      "Externo": "Fortalecer referencia interna: ¿Qué decís vos sobre esto?"
+    }
+  },
+  {
+    nombre: "Acción",
+    categoria: "Iniciativa",
+    color: "#3a7a2a",
+    polos: {
+      "Proactivo": ["ya hice", "me adelanté", "tomé la iniciativa", "decidí hacer", "empecé yo", "lo encaré", "fui y lo hice", "lo resolví", "actué"],
+      "Reactivo": ["espero", "reacciono", "ahí veo", "cuando pasa", "depende de lo que pase", "me quedo", "espero que", "a ver qué pasa"]
+    },
+    pregunta: "¿Qué hiciste cuando te encontraste con ese obstáculo?",
+    intervencion: {
+      "Proactivo": "Canalizar energía: ¿Qué querés generar activamente?",
+      "Reactivo": "Activar recursos: ¿Qué podrías hacer antes de que pase?"
+    }
+  },
+  {
+    nombre: "Estrés",
+    categoria: "Respuesta",
+    color: "#9a4a2a",
+    polos: {
+      "Sentimiento": ["siento", "me invade", "me bloqueo", "me angustia", "nudo", "me paraliza", "lo vivo", "me duele", "me pesa", "me afecta", "me moviliza", "me preocupa", "me frustra"],
+      "Pensamiento": ["analizo", "pienso", "busco la lógica", "lo proceso", "razono", "busco una explicación", "me pregunto por qué", "entiendo que", "lo que pasa es que"]
+    },
+    pregunta: "¿Cómo respondés cuando algo te genera presión?",
+    intervencion: {
+      "Sentimiento": "Anclar estado de recurso antes de trabajar el contenido.",
+      "Pensamiento": "Conectar con el cuerpo: ¿Dónde sentís esto en el cuerpo?"
+    }
+  },
+  {
+    nombre: "Atención",
+    categoria: "Foco",
+    color: "#2a4a8a",
+    polos: {
+      "Uno": ["me pasa a mí", "yo vivo", "lo que me pasa", "mi experiencia", "desde mi lugar", "yo me siento", "a mí me"],
+      "El Otro": ["lo que le pasa", "pienso en él", "pienso en ella", "me preocupa cómo está", "siento lo que siente", "me meto en su lugar", "lo veo a él", "la veo a ella"],
+      "Sistema": ["el grupo", "el sistema", "el contexto", "la dinámica", "el equipo", "cómo funciona todo", "entre todos", "el entorno"]
+    },
+    pregunta: "¿En qué o en quién ponés el foco cuando pasa esto?",
+    intervencion: {
+      "Uno": "Ampliar perspectiva: ¿Cómo lo vive la otra persona?",
+      "El Otro": "Recuperar el propio lugar: ¿Y vos, qué necesitás?",
+      "Sistema": "Enfocar en lo específico: ¿Qué pasa puntualmente entre vos y X?"
+    }
+  },
+  {
+    nombre: "Estilo de trabajo",
+    categoria: "Vínculo",
+    color: "#6a7a2a",
+    polos: {
+      "Independiente": ["solo", "yo solo", "sin ayuda", "no me gusta depender", "lo resuelvo yo", "me manejo solo", "prefiero solo", "no necesito"],
+      "Proximidad": ["cerca pero", "con espacio", "a mi ritmo", "colaboro pero", "necesito mi espacio", "cerca aunque"],
+      "Cooperación": ["juntos", "en equipo", "con otros", "colaborar", "el grupo", "entre todos", "trabajamos", "nos ayudamos"]
+    },
+    pregunta: "¿Cómo trabajás mejor, solo o con otros?",
+    intervencion: {
+      "Independiente": "Respetar autonomía. Explorar si hay dificultad para pedir ayuda.",
+      "Proximidad": "Trabajar el equilibrio entre conexión y autonomía.",
+      "Cooperación": "Fortalecer identidad propia dentro del colectivo."
+    }
+  },
+  {
+    nombre: "Valores",
+    categoria: "Motivación profunda",
+    color: "#7a5a2a",
+    polos: {
+      "Filiación": ["pertenecer", "ser parte", "que me incluyan", "el vínculo", "me importa la gente", "conectado", "no quedarme afuera", "la relación", "los demás"],
+      "Poder": ["liderar", "el control", "que me escuchen", "influir", "tomar decisiones", "mi opinión", "referente", "que me reconozcan"],
+      "Logro": ["alcanzar", "lograr", "superarme", "la meta", "el objetivo", "mejorar", "crecer", "dar lo mejor", "llegar", "conseguir"]
+    },
+    pregunta: "¿Qué es lo que más te importa en esto?",
+    intervencion: {
+      "Filiación": "Trabajar desde el vínculo. El cambio que proponga tiene que cuidar la pertenencia.",
+      "Poder": "Ofrecer protagonismo en el proceso. No imponer, co-construir.",
+      "Logro": "Orientar con metas claras y medibles. El avance tiene que ser visible."
+    }
+  },
+  {
+    nombre: "Actividad",
+    categoria: "Orientación",
+    color: "#2a7a6a",
+    polos: {
+      "Información": ["entender", "saber más", "aprender", "por qué", "comprender", "conocer", "me pregunto", "me interesa saber", "qué significa"],
+      "Relación": ["cómo me llevo", "el vínculo", "nos relacionamos", "lo que siento con", "la conexión", "cómo estamos", "entre nosotros"],
+      "Uso": ["para qué sirve", "cómo lo aplico", "quiero resultados", "que funcione", "en la práctica", "lo que sirva", "qué hago con esto"]
+    },
+    pregunta: "¿Qué es lo que más te moviliza de esta situación?",
+    intervencion: {
+      "Información": "Dar marco conceptual antes de proponer cambios.",
+      "Relación": "Trabajar desde el vínculo y el impacto emocional.",
+      "Uso": "Ir directo a la acción concreta. ¿Qué podés hacer distinto mañana?"
+    }
+  },
+  {
+    nombre: "Representacional",
+    categoria: "Canal sensorial",
+    color: "#4a2a8a",
+    polos: {
+      "Visual": ["veo", "me imagino", "lo visualizo", "me parece", "miro", "el panorama", "desde mi perspectiva", "lo veo", "imagen", "se ve"],
+      "Auditivo": ["escucho", "me suena", "me resuena", "me dice algo", "me habla", "tiene sentido", "lo que decís", "un click", "me suena bien"],
+      "Kinestésico": ["siento", "me pesa", "lo cargo", "en el cuerpo", "me toca", "me mueve", "lo siento", "pesado", "liviano", "en las entrañas", "a prueba"]
+    },
+    pregunta: "¿Podés contarme más sobre cómo vivís eso?",
+    intervencion: {
+      "Visual": "Usar lenguaje visual: ¿Qué imagen te viene cuando pensás en esto?",
+      "Auditivo": "Usar lenguaje auditivo: ¿Qué te dice esa voz interna?",
+      "Kinestésico": "Usar lenguaje corporal: ¿Dónde lo sentís en el cuerpo?"
+    }
+  }
+];
+
+let debounceTimer;
+
+function detectarEnVivo(texto) {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    if (texto.trim().length > 10) detectar();
+  }, 600);
+}
+
+function detectar() {
+  const texto = document.getElementById('input').value;
+  if (!texto.trim()) return;
+
+  const textoLower = texto.toLowerCase();
+  const resultados = [];
+
+  for (const mp of METAPROGRAMAS) {
+    for (const [polo, frases] of Object.entries(mp.polos)) {
+      const encontradas = frases.filter(f => textoLower.includes(f.toLowerCase()));
+      if (encontradas.length > 0) {
+        resultados.push({ mp, polo, encontradas });
+      }
+    }
+  }
+
+  renderResultados(resultados);
+}
+
+function renderResultados(resultados) {
+  const div = document.getElementById('resultados');
+
+  if (resultados.length === 0) {
+    div.innerHTML = `<div class="sin-deteccion">No se detectaron metaprogramas claros.<br>Probá escribir más frases del consultante.</div>`;
+    return;
+  }
+
+  let html = `<div class="conteo">${resultados.length} metaprograma${resultados.length > 1 ? 's' : ''} detectado${resultados.length > 1 ? 's' : ''}</div>`;
+
+  for (const { mp, polo, encontradas } of resultados) {
+    const tags = encontradas.map(f => `<span class="tag">"${f}"</span>`).join('');
+    html += `
+      <div class="card">
+        <div class="card-header" style="background: ${mp.color}">
+          <div>
+            <div class="card-titulo">${mp.nombre}</div>
+            <div class="card-categoria">${mp.categoria}</div>
+          </div>
+          <div class="polo-badge">${polo}</div>
+        </div>
+        <div class="card-body">
+          <div>
+            <div class="seccion-label">Indicadores detectados</div>
+            <div class="tags">${tags}</div>
+          </div>
+          <div>
+            <div class="seccion-label">Pregunta de disparo</div>
+            <div class="pregunta">→ ${mp.pregunta}</div>
+          </div>
+          <div>
+            <div class="seccion-label">Intervención sugerida</div>
+            <div class="intervencion" style="border-color: ${mp.color}">${mp.intervencion[polo]}</div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  div.innerHTML = html;
+}
+
+function limpiar() {
+  document.getElementById('input').value = '';
+  document.getElementById('resultados').innerHTML = `
+    <div class="empty-state">
+      <div class="icon">✍️</div>
+      Escribí lo que dice el consultante<br>y los metaprogramas aparecerán aquí.
+    </div>`;
+}
+</script>
+</body>
+</html>
